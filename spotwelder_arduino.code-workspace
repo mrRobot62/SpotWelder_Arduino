@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "SpotWelder_Arduino",
+			"path": "../../../../../local-workspace/arduino/SpotWelder_Arduino/SpotWelder_Arduino/SpotWelder_Arduino"
+		}
+	],
+	"settings": {}
+}

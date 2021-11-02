@@ -5,8 +5,8 @@
 #include <OneButton.h>
 #include <Ticker.h>
 
-#define VERSION "0.1"
-#define AUTHOR "LunaX-0921"
+#define VERSION "0.2"
+#define AUTHOR "LunaX-2021"
 
 #define PIN_IN1 10
 #define PIN_IN2 11
@@ -22,8 +22,8 @@ Ticker *tickerHB = nullptr;
 Ticker *tickerClearMsg = nullptr;
 
 
-#define DEFAULT_PULSE_MS 200
-#define DEFAULT_DELAY_MS 1500
+#define DEFAULT_PULSE_MS 150
+#define DEFAULT_DELAY_MS 500
 #define MAX_PULSE_MS 750
 #define MIN_PULSE_MS 0
 #define MAX_DELAY_MS 3000

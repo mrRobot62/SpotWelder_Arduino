@@ -1,12 +1,19 @@
 #include <Arduino.h>
 #include "config.h"
 
-
+/*********************************************************************************************
+ * Interruptroutine for RotaryEncoder
+ * 
+ ********************************************************************************************/
 void checkPosition()
 {
   encoder->tick(); // just call tick() to check the state.
 }
 
+/*********************************************************************************************
+ * Interruptroutinte for RotaryEncoder
+ * 
+ ********************************************************************************************/
 void checkTicks()
 {
   // include all buttons here to be checked
@@ -14,6 +21,43 @@ void checkTicks()
   powerBtn->tick();
 }
 
+/*********************************************************************************************
+ * OneButton interrupt routine, called if user made a double click
+ * increase state
+ * if max state than go to 0 (go back without saving)
+ *********************************************************************************************/
+void click() {
+   state++;
+   if (state > MAX_STATE) {
+     state = 0;
+     refresh = true;
+   }
+}
+
+/*********************************************************************************************
+ * clickPwrBtn()
+ * interrupt callback routine for power (welding) button
+ * 
+ *********************************************************************************************/
+void clickPwrBtn() {
+  state = 10; // welding
+}
+
+/*********************************************************************************************
+ * doubleClick()
+ * interrupt routine for rotary knob switch. Is used to change values
+ * Doubleclick is only useable if state is > 0
+ *********************************************************************************************/
+void doubleClick() {
+  if (state > 0) {
+    state = 99;     // save state 
+  }
+}
+
+/*********************************************************************************************
+ * Initiize LCD and create some new characters
+ * 
+ ********************************************************************************************/
 void LCDInit() {
   lcd.begin(16,4);
 
@@ -30,23 +74,29 @@ void LCDInit() {
   lcd.home (); 
   lcd.clear (); 
   lcd.setCursor(0,0);
-  lcd.print("Spot Welder V"); lcd.print(VERSION);
+  lcd.print("Spot Welder");
   lcd.setCursor(0,1);
   lcd.print("(c) "); lcd.print(AUTHOR);
+  lcd.setCursor(0,3);
+  lcd.print("Version:"); lcd.print(VERSION);
 }
 
-void writeNumber(int n, char *fmt, uint8_t x, uint8_t y) {
+/*********************************************************************************************
+ * LCD write function only for a formatted number
+ * 
+ ********************************************************************************************/
+void writeNumber(int n, const char *fmt, uint8_t x, uint8_t y) {
   char tmp[64];
   sprintf(tmp, fmt, n);
   lcd.setCursor(x,y);
   lcd.print(tmp);
 }
 
-/**
+/*********************************************************************************************
  * setFootage()
  * print a string in the last row (status row), due to state as parameter
  * 
- **/
+ *********************************************************************************************/
 void setFootage(uint8_t id) {
   char tmp[20];
   switch(id) {
@@ -79,25 +129,25 @@ void setFootage(uint8_t id) {
   }
 }
 
-/**
+/*********************************************************************************************
  * mainLCD()
  * 
- * update LCD screen with "normal" data
- **/
+ * update LCD screen with "normal" data, called by void loop()
+ *********************************************************************************************/
 void mainLCD(bool clear=false) {
   if (clear) lcd.clear();
   writeNumber(eeprom_values.pulse_ms,     "Welding:%4dms",1,0);
-  writeNumber(eeprom_values.time_delay_ms,"Delay  :%4dms",1,1);
-  writeNumber(eeprom_values.welding_count,"Count  :%4d",1,2);
+  writeNumber(eeprom_values.time_delay_ms,"Cooling:%4dms",1,1);
+  writeNumber(eeprom_values.welding_count,"Count  :%6d",1,2);
 
 }
 
-/**
+/*********************************************************************************************
  * selectRow()
  * normaly used if user try to change numbers (pulse time, pause time).
  * Indicator on postion 0 at the row is an > sign for selected row
  * 
- **/
+ *********************************************************************************************/
 void selectRow(uint8_t row, bool remove=false) {
   lcd.setCursor(0,row);
   if (remove) {
@@ -108,9 +158,9 @@ void selectRow(uint8_t row, bool remove=false) {
   }
 }
 
-
-/**
+/*********************************************************************************************
  * changeValues()
+ * called by void loop() 
  * 
  * depends on state, user can change values
  * state = 1 : changing welding time
@@ -119,10 +169,8 @@ void selectRow(uint8_t row, bool remove=false) {
  * change footage on screen 
  * 
  * Method is called by void loop()
- **/
+ *********************************************************************************************/
 void changeValues(uint8_t state, uint16_t value) {
-  int timeoutValue = 0;
-  int delayValue = 0;
   int newValue = 0;
   switch(state) {
     case 1:
@@ -141,17 +189,15 @@ void changeValues(uint8_t state, uint16_t value) {
       lcd.print(printString);
       eeprom_values.time_delay_ms = newValue;
       break;
-
   }
-
 }
 
-/**
+/*********************************************************************************************
  * save2Eeprom()
  * 
  * save struct into eeprom
  * 
- **/
+ *********************************************************************************************/
 void save2Eeprom() {
   EEPROM.put(0,eeprom_values);
   savedDelayMS = eeprom_values.time_delay_ms;
@@ -166,65 +212,33 @@ void pressLongStop() {
   state = 98;
 }
 
-/**
- * OneButton interrupt routine, called if user made a double click
- * increase state
- * if max state than go to 0 (go back without saving)
- **/
-void click() {
-   state++;
-   if (state > MAX_STATE) {
-     state = 0;
-     refresh = true;
-   }
-}
-
-/**
- * clickPwrBtn()
- * interrupt callback routine for power (welding) button
- * 
- **/
-void clickPwrBtn() {
-  state = 10; // welding
-}
-
-/**
- * doubleClick()
- * interrupt routine for rotary knob switch. Is used to change values
- * Doubleclick is only useable if state is > 0
- **/
-void doubleClick() {
-  if (state > 0) {
-    state = 99;     // save state 
-  }
-}
 
 
-/**
+/*********************************************************************************************
  * reset()
  * a reset impulse was recognizes. Set eeprom values to default and save them again into eeprom
  * This is usefull if user made an mistake with values
- **/
+ *********************************************************************************************/
 void reset() {
   lcd.clear();
   lcd.print("RESET");
   lcd.print("wait ....");
 }
-/**
+/*********************************************************************************************
  * clearMessage()
  * LCD routine to delete last status row from LCD
  * 
- **/
+ *********************************************************************************************/
 void clearMessage() {
   setFootage(98);
   //tickerClearMsg->pause();
 }
 
-/**
+/*********************************************************************************************
  * heartBeat()
  * If system is up and running a heartbeat blinks at last column in the first row
  * 
- **/
+ *********************************************************************************************/
 void heartBeat() {
   static bool hb = true;
   lcd.setCursor(15,0);
@@ -232,13 +246,12 @@ void heartBeat() {
   hb = !hb;
 }
 
-/**
+/*********************************************************************************************
  * startWelding()
- * if user push the power(welding) butotn, this routine is called. Welding (pulse) time is based on eeprom value
+ * if user push the power(welding) button, this routine is called. Welding (pulse) time is based on eeprom value
  * 
- **/
+ *********************************************************************************************/
 void startWelding() {
-  char tmp[17];
   lcd.setCursor(0,3);
   for (int x=0; x < 16; x++) {
     lcd.write(8);
@@ -248,9 +261,10 @@ void startWelding() {
     // enable SSR
     digitalWrite(PIN_PULSE, HIGH);
   }
+  // disable SSR
   digitalWrite(PIN_PULSE, LOW);
 
-  // delay
+  // delay short time between two weldings
   start = millis();
   bool done = false;
   while ((millis() - start) < eeprom_values.time_delay_ms) {
@@ -260,15 +274,15 @@ void startWelding() {
       done=true;
     }
   }
+  // update welding count
   eeprom_values.welding_count++;
   save2Eeprom();
 }
 
 
-/*-------------------------------------------------------------------------------------------------------*/
-/* Arudiono routines setup() and loop()
-/*-------------------------------------------------------------------------------------------------------*/
-
+/*********************************************************************************************
+ * Arudiono routines setup() and loop()
+ *********************************************************************************************/
 void setup() {
     Serial.begin(115200);
     Serial.println("Hello");
@@ -293,7 +307,7 @@ void setup() {
   
   encoder = new RotaryEncoder(PIN_IN1, PIN_IN2, RotaryEncoder::LatchMode::TWO03);
   button = new OneButton(PIN_SW, true, true);
-  powerBtn = new OneButton(PIN_PWR, false, true);
+  powerBtn = new OneButton(PIN_PWR, true, true);
 
   button->setPressTicks(2000); // that is the time when LongPressStart is called
   button->attachLongPressStart(pressLongStart);
@@ -335,6 +349,7 @@ void loop() {
   encoder->tick();
   powerBtn->tick();
   int newPos = encoder->getPosition();
+  //state=10;
   switch(state) {
     case 0 :                          // system is in idle state
       lcd.noCursor();

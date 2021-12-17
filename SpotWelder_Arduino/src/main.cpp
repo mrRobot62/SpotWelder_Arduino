@@ -199,9 +199,11 @@ void changeValues(uint8_t state, uint16_t value) {
  * 
  *********************************************************************************************/
 void save2Eeprom() {
-  EEPROM.put(0,eeprom_values);
-  savedDelayMS = eeprom_values.time_delay_ms;
-  savedPulseMS = eeprom_values.pulse_ms;
+  #ifndef DBG_NO_EEPROM_SAVE
+    EEPROM.put(0,eeprom_values);
+    savedDelayMS = eeprom_values.time_delay_ms;
+    savedPulseMS = eeprom_values.pulse_ms;
+  #endif
 }
 
 void pressLongStart() {
@@ -276,7 +278,9 @@ void startWelding() {
   }
   // update welding count
   eeprom_values.welding_count++;
-  save2Eeprom();
+  #ifndef DBG_WELDING_TIMING
+    save2Eeprom();
+  #endif
 }
 
 
@@ -349,7 +353,9 @@ void loop() {
   encoder->tick();
   powerBtn->tick();
   int newPos = encoder->getPosition();
-  //state=10;
+  #ifdef DBG_WELDING_TIMING
+    state=10;
+  #endif
   switch(state) {
     case 0 :                          // system is in idle state
       lcd.noCursor();

@@ -8,6 +8,9 @@
 #define VERSION "0.2"
 #define AUTHOR "LunaX-2021"
 
+//#define DBG_WELDING_TIMING
+//#define DBG_NO_EEPROM_SAVE
+
 #define PIN_IN1 10
 #define PIN_IN2 11
 #define PIN_SW 12       // encoder switch
